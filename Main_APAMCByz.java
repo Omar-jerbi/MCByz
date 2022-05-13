@@ -13,16 +13,13 @@ public class Main_APAMCByz {
 	// struttura: [ P0, P1, P2, P3 ] dove, per esempio P2 = [ bitRicevutoDaP0, bitRicevutoDaP1, bitInviatoDiP2,  bitRicevutoDaP3 ] 
 	public static int[][] PROCs;
 
-	//contiene la scelta che farà il processo i al round successivo
+	//contiene la scelta che farà il processo i (i = 0, 1, 2, 3) al round successivo
 	public static int[] NextRoundValue ;
-	
-	
 	
 	//procedura che inizializza le scelte dei processi
 	public static void init() {
 		PROCs = new int[4][4];
-		
-		int[] aux = {V, V, notV, -1};
+		int[] aux = {notV, V, V, -1}; //bit iniziali dei processi
 		NextRoundValue = aux; 
 				
 		for(int i = 0; i<3; i++) {
@@ -75,10 +72,11 @@ public class Main_APAMCByz {
 			for(int i = 0; i<4; i++) {			
 				PROCs[i][proc_j] = PROCs[proc_j][proc_j]; //trasmissione a tutti i processi
 				PROCs[proc_j][i] = PROCs[i][i]; //ricezione da tutti i processi
+				
+				//azione del disonesto: spedisce il bit 1-(decisione di proc_j) a proc_j
+				if(i==3) PROCs[proc_j][3] = 1-PROCs[proc_j][proc_j]; 
 			}
 						
-			//azione del disonesto: spedisce il bit 1-(decisione di proc_j) al proc_j
-			PROCs[proc_j][3] = 1-PROCs[proc_j][proc_j]; 
 			
 			
 			int maj = maj(proc_j);
@@ -97,13 +95,11 @@ public class Main_APAMCByz {
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	public static void main(String[] args) {
 			
-		int[][] RES = new int[1024][2]; //RES := [ [risultato 0/1, numero round] , ....]
+		int[][] RES = new int[1024][2]; //RES := [ [risultato 0/1, quanti round] , ....]
 		for(int r = 0; r<1024; r++) {
 			init();
 			int round = 0;
 			while(true) {//inizio round
-				round++;
-				
 				var ra = new Random();
 				MONETA = ra.nextInt(2);
 				
@@ -120,22 +116,45 @@ public class Main_APAMCByz {
 				for(int i = 0; i<3; i++) {
 					PROCs[i][i] = NextRoundValue[i];
 				}
+
+				round++;
 			}//fine round
 	
-			
-//			System.out.println("v = "+V);
-//			System.out.println("round svolti: "+round);
-//			System.out.println("bit accordo: "+ PROCs[2][2] + "\n----------------------------------------------------");
+
 			RES[r][0] = PROCs[2][2];
 			RES[r][1] = round;
+
 		}
 		
-		
-		int X = 0;
+
+		//calcola il massimo numero di round in caso di raggiungimento dell'accordo V
+		int MAXrounds = 0;
 		for(var ar: RES) {
-			if(ar[0] == V && ar[1]==6) X++; 
+			if(ar[0] == V && ar[1]>=MAXrounds) MAXrounds = ar[1]; 
 		}
-		System.out.println(X);
+				
+		////////////////////////////////////
+		
+		Histogram histogram = new Histogram(MAXrounds+1); //histogramma di MAXrounds bin
+		
+		int[] count_rounds = new int[MAXrounds+1];
+		for(var ar: RES) {
+			if(ar[0] == V ) count_rounds[ar[1]]++;
+		}
+		
+		int i = 0;
+		for(var x : count_rounds) System.out.println("Numero round: " + (i++)+ " --- Runs:"+  x );
+		
+		
+		for(var ar:RES) {
+			if(ar[0] == V) histogram.addDataPoint(ar[1]);
+		}
+		
+		
+		StdDraw.setCanvasSize(1000,400);
+		histogram.draw();
+		
+		
 		
 }
 
